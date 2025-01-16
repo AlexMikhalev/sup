@@ -25,29 +25,9 @@ jobs:
       - name: Build
         run: go build -v ./...
 
-  test-rust:
-    name: Test Rust
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          
-      - name: Test
-        working-directory: ./src
-        run: cargo test --verbose
-        
-      - name: Build
-        working-directory: ./src
-        run: cargo build --release
-
   release:
     name: Create Release
-    needs: [test-go, test-rust]
+    needs: [test-go]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     

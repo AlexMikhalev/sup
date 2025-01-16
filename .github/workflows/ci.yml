@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: [ main ]
 
+# Add these permissions at the workflow level
+permissions:
+  contents: write # This is required for creating releases
+  
 jobs:
   test-go:
     name: Test Go

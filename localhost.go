@@ -6,8 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"strings"
-	"syscall"
 
 	"github.com/pkg/errors"
 )
@@ -38,40 +36,19 @@ func (c *LocalhostClient) Run(task *Task) (err error) {
 		return fmt.Errorf("Command already running")
 	}
 
-	// Parse the command and arguments
-	cmdArgs := strings.Fields(task.Run)
-	if len(cmdArgs) == 0 {
-		return fmt.Errorf("No command specified")
+	// Create shell command that includes environment setup
+	shellCmd := task.Run
+	if c.env != "" {
+		shellCmd = c.env + shellCmd
 	}
 
-	// For interactive commands, use syscall.Exec
-	if task.TTY {
-		binary, err := exec.LookPath(cmdArgs[0])
-		if err != nil {
-			return ErrTask{task, err.Error()}
-		}
-
-		env := os.Environ()
-		if c.env != "" {
-			env = append(env, strings.Split(strings.TrimSuffix(c.env, ";"), ";")...)
-		}
-
-		err = syscall.Exec(binary, cmdArgs, env)
-		if err != nil {
-			return ErrTask{task, err.Error()}
-		}
-		return nil
-	}
-
-	// Create command with proper arguments for non-interactive commands
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+	// Create command with shell interpretation
+	cmd := exec.Command("sh", "-c", shellCmd)
 
 	// Set up environment variables
-	if c.env != "" {
-		cmd.Env = append(os.Environ(), strings.Split(strings.TrimSuffix(c.env, ";"), ";")...)
-	}
+	cmd.Env = os.Environ()
 
-	// Set up pipes for non-interactive commands
+	// Set up pipes
 	if c.stdin, err = cmd.StdinPipe(); err != nil {
 		return errors.Wrap(err, "failed to create stdin pipe")
 	}
